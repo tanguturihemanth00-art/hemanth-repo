@@ -43,6 +43,7 @@ jobs:
         # Pulling sensitive data from GitHub Secrets
         APP_USERNAME: ${{ secrets.APP_USERNAME }}
         APP_PASSWORD: ${{ secrets.APP_PASSWORD }}
+        APP_URL: 'https://lcoportal.sscnxtdigital.in/'
         # Set headless to true for GitHub Actions (no UI)
         BROWSER_HEADLESS: 'true'
         # Disable interactive features

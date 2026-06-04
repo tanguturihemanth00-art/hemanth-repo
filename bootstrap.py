@@ -53,9 +53,9 @@ def bootstrap(strict: bool = True) -> bool:
     # ---- Check 1: .env file ----------------------------------------
     env_file = _PROJECT_ROOT / ".env"
     if not env_file.exists():
-        errors.append(
-            f".env file not found at {env_file}. "
-            "Copy .env.example to .env and fill in your credentials."
+        print(
+            f"  [WARNING] .env file not found at {env_file}. "
+            "Using system environment variables only."
         )
     else:
         print(f"  [OK] .env found: {env_file}")
