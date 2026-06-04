@@ -1,27 +1,63 @@
-name: Playwright Tests
+name: Enterprise Automation Run
+
 on:
-  push:
-    branches: [ main, master ]
-  pull_request:
-    branches: [ main, master ]
+  workflow_dispatch:
+    inputs:
+      workflow_name:
+        description: 'Workflow to run'
+        required: true
+        default: 'demo'
+        type: choice
+        options:
+          - demo
+
 jobs:
-  test:
-    timeout-minutes: 60
+  run-automation:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
+
     steps:
-    - uses: actions/checkout@v4
-    - uses: actions/setup-node@v4
+    - name: Checkout Repository
+      uses: actions/checkout@v4
+
+    - name: Setup Python 3.12
+      uses: actions/setup-python@v5
       with:
-        node-version: lts/*
-    - name: Install dependencies
-      run: npm ci
-    - name: Install Playwright Browsers
-      run: npx playwright install --with-deps
-    - name: Run Playwright tests
-      run: npx playwright test
-    - uses: actions/upload-artifact@v4
-      if: ${{ !cancelled() }}
+        python-version: '3.12'
+        cache: 'pip'
+
+    - name: Install Dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+
+    - name: Install Playwright Chromium
+      run: playwright install chromium --with-deps
+
+    - name: Create Demo Input File
+      if: github.event.inputs.workflow_name == 'demo'
+      run: python create_demo_excel.py
+
+    - name: Execute Workflow
+      env:
+        # Pulling sensitive data from GitHub Secrets
+        APP_USERNAME: ${{ secrets.APP_USERNAME }}
+        APP_PASSWORD: ${{ secrets.APP_PASSWORD }}
+        # Set headless to true for GitHub Actions (no UI)
+        BROWSER_HEADLESS: 'true'
+        # Disable interactive features
+        CI: 'true'
+      run: |
+        python main.py --workflow ${{ github.event.inputs.workflow_name }} --input data/input/demo.xlsx
+
+    - name: Upload Output Artifacts
+      if: always()
+      uses: actions/upload-artifact@v4
       with:
-        name: playwright-report
-        path: playwright-report/
-        retention-days: 30
+        name: automation-results
+        path: |
+          data/output/
+          data/failed/
+          data/screenshots/
+          data/logs/
+        retention-days: 7
