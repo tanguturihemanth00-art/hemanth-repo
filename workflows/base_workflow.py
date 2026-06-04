@@ -249,5 +249,10 @@ class BaseWorkflow(ABC, Generic[T]):
 
         # ---- Step 7: Generate report --------------------------------
         self._report_manager.generate(execution_result)
+        try:
+            from services.reporting_service import ReportingService
+            ReportingService.generate_html_report(execution_result)
+        except Exception as exc:
+            log.error("Failed to generate HTML report: {exc}", exc=exc)
 
         return execution_result

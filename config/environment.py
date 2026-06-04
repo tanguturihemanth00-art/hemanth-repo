@@ -156,6 +156,13 @@ class EnvironmentConfig:
         path.mkdir(parents=True, exist_ok=True)
         return path
 
+    @property
+    def report_dir(self) -> Path:
+        raw = os.environ.get("REPORT_DIR", "data/report")
+        path = _PROJECT_ROOT / raw
+        path.mkdir(parents=True, exist_ok=True)
+        return path
+
     # ------------------------------------------------------------------ #
     # Project Root                                                         #
     # ------------------------------------------------------------------ #

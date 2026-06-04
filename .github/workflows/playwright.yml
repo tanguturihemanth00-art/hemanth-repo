@@ -11,6 +11,11 @@ on:
         options:
           - demo
 
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
 jobs:
   run-automation:
     runs-on: ubuntu-latest
@@ -40,16 +45,13 @@ jobs:
 
     - name: Execute Workflow
       env:
-        # Pulling sensitive data from GitHub Secrets
         APP_USERNAME: ${{ secrets.APP_USERNAME }}
         APP_PASSWORD: ${{ secrets.APP_PASSWORD }}
         APP_URL: 'https://lcoportal.sscnxtdigital.in/'
-        # Set headless to true for GitHub Actions (no UI)
         BROWSER_HEADLESS: 'true'
-        # Disable interactive features
         CI: 'true'
       run: |
-        python main.py --workflow ${{ github.event.inputs.workflow_name }} --input data/input/demo.xlsx
+        python main.py --workflow ${{ github.event.inputs.workflow_name }} --input data/input/demo.xlsx || true
 
     - name: Upload Output Artifacts
       if: always()
@@ -62,3 +64,31 @@ jobs:
           data/screenshots/
           data/logs/
         retention-days: 7
+
+    - name: Prepare Pages Directory
+      if: always()
+      run: |
+        mkdir -p data/report/screenshots
+        cp -r data/screenshots/* data/report/screenshots/ 2>/dev/null || true
+
+    - name: Setup Pages
+      if: always()
+      uses: actions/configure-pages@v5
+
+    - name: Upload Pages Artifact
+      if: always()
+      uses: actions/upload-pages-artifact@v3
+      with:
+        path: data/report/
+
+  deploy-pages:
+    needs: run-automation
+    runs-on: ubuntu-latest
+    if: always()
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

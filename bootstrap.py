@@ -93,6 +93,7 @@ def bootstrap(strict: bool = True) -> bool:
             env.output_dir,
             env.failed_dir,
             env.screenshot_dir,
+            env.report_dir,
             env.log_dir,
             env.session_file.parent,
         ]
