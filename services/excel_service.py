@@ -158,7 +158,7 @@ class ExcelService(Generic[T]):
             row_id = f"ROW_{idx}"
             try:
                 record: T = self._record_class(**{**row, "row_id": row_id})
-                record.__row_index__ = idx
+                record.row_index_ = idx
                 records.append(record)
             except Exception as exc:
                 _log.warning(

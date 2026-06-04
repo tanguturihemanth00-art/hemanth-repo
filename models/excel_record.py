@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from datetime import datetime
 from typing import Any, Optional
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from config.constants import STATUS_PENDING
 
@@ -25,12 +25,19 @@ class ExcelRecord(BaseModel):
             customer_name: str
             email: str
 
-    Framework will map Excel column headers → field names (case-insensitive, 
+    Framework will map Excel column headers -> field names (case-insensitive,
     strip whitespace, replace spaces with underscores).
     """
 
-    # Internal tracking fields — populated by the framework
-    __row_index__: int = Field(0, exclude=True)
+    model_config = ConfigDict(
+        extra="allow",
+        populate_by_name=True,
+        str_strip_whitespace=True,
+        protected_namespaces=(),
+    )
+
+    # Internal tracking — use row_index_ (no dunders) for Pydantic v2 compat
+    row_index_: int = Field(0, exclude=True)
 
     row_id: str = Field(
         default="",
@@ -53,11 +60,7 @@ class ExcelRecord(BaseModel):
         description="Path to screenshot captured for this row"
     )
 
-    model_config = {
-        "extra": "allow",          # Accept unknown columns without error
-        "populate_by_name": True,
-        "str_strip_whitespace": True,
-    }
+
 
     @model_validator(mode="before")
     @classmethod

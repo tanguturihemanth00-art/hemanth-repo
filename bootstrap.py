@@ -58,7 +58,7 @@ def bootstrap(strict: bool = True) -> bool:
             "Copy .env.example to .env and fill in your credentials."
         )
     else:
-        print(f"  ✅ .env found: {env_file}")
+        print(f"  [OK] .env found: {env_file}")
 
     # ---- Check 2: Environment variables ----------------------------
     try:
@@ -67,7 +67,7 @@ def bootstrap(strict: bool = True) -> bool:
         _ = env.app_url
         _ = env.app_username
         _ = env.app_password
-        print(f"  ✅ Environment: APP_URL={env.app_url}, USER={env.app_username}")
+        print(f"  [OK] Environment: APP_URL={env.app_url}, USER={env.app_username}")
     except Exception as exc:
         errors.append(f"Environment config error: {exc}")
 
@@ -76,8 +76,11 @@ def bootstrap(strict: bool = True) -> bool:
         from config.settings import get_settings
         from models.config_model import FrameworkConfigModel
         cfg = get_settings()
-        validated = FrameworkConfigModel(**cfg._raw)
-        print(f"  ✅ config.yaml valid | browser={cfg.browser_type} | headless={cfg.browser_headless}")
+        # Only validate the keys that FrameworkConfigModel knows about
+        known_keys = {"browser", "session", "logging", "retry", "excel", "workflow"}
+        filtered = {k: v for k, v in cfg._raw.items() if k in known_keys}
+        validated = FrameworkConfigModel(**filtered)
+        print(f"  [OK] config.yaml valid | browser={cfg.browser_type} | headless={cfg.browser_headless}")
     except Exception as exc:
         errors.append(f"config.yaml validation failed: {exc}")
 
@@ -95,21 +98,23 @@ def bootstrap(strict: bool = True) -> bool:
         ]
         for d in dirs:
             d.mkdir(parents=True, exist_ok=True)
-        print(f"  ✅ Data directories ready: {len(dirs)} directories verified")
+        print(f"  [OK] Data directories ready: {len(dirs)} directories verified")
     except Exception as exc:
         errors.append(f"Data directory setup failed: {exc}")
 
     # ---- Check 5: Core imports --------------------------------------
     try:
-        import playwright
+        import importlib.metadata
         import pandas
         import openpyxl
         import pydantic
         import loguru
         import tenacity
         import yaml
+        import playwright
+        pw_version = importlib.metadata.version("playwright")
         print(
-            f"  ✅ Dependencies: playwright={playwright.__version__}, "
+            f"  [OK] Dependencies: playwright={pw_version}, "
             f"pandas={pandas.__version__}, "
             f"pydantic={pydantic.__version__}"
         )
@@ -128,26 +133,26 @@ def bootstrap(strict: bool = True) -> bool:
             text=True,
             timeout=10,
         )
-        print("  ✅ Playwright CLI accessible")
+        print("  [OK] Playwright CLI accessible")
     except Exception as exc:
         errors.append(f"Playwright CLI check failed: {exc}")
 
     # ---- Report ----------------------------------------------------
     print()
     if errors:
-        print(f"❌ Bootstrap FAILED — {len(errors)} error(s):")
+        print(f"[FAIL] Bootstrap FAILED -- {len(errors)} error(s):")
         for i, err in enumerate(errors, 1):
             print(f"   {i}. {err}")
         if strict:
             sys.exit(1)
         return False
     else:
-        print("✅ All bootstrap checks passed. Framework is ready.")
+        print("[OK] All bootstrap checks passed. Framework is ready.")
         return True
 
 
 if __name__ == "__main__":
     print("=" * 60)
-    print("  Enterprise Automation Framework — Bootstrap Check")
+    print("  Enterprise Automation Framework - Bootstrap Check")
     print("=" * 60)
     bootstrap(strict=True)
