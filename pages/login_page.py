@@ -1,24 +1,11 @@
 """
 pages/login_page.py
 =====================
-LoginPage — handles website authentication UI.
+LoginPage — SSC LCO Portal login implementation.
+URL: https://lcoportal.sscnxtdigital.in/
 
-⚠️  IMPLEMENTATION REQUIRED:
-    Replace the placeholder locators with real locators from your target website.
-    Use the locator priority: role > label > data-testid > css > xpath
-
-    Steps to implement:
-    1. Inspect the login page of your website
-    2. Find the username/FR-code field locator
-    3. Find the password field locator
-    4. Find the submit/login button locator
-    5. Find the post-login success indicator
-
-    Never hardcode credentials here — always use:
-        from config.environment import get_env
-        env = get_env()
-        username = env.app_username
-        password = env.app_password
+Selectors discovered by live inspection of the portal.
+Credentials are always read from .env — never hardcoded.
 """
 
 from __future__ import annotations
@@ -34,64 +21,49 @@ _log = get_logger()
 
 class LoginPage(BasePage):
     """
-    Page object for the login/authentication page.
+    Page object for the SSC LCO Portal login page.
 
     Usage:
         login = LoginPage(page)
         await login.perform_login(username=env.app_username, password=env.app_password)
-        assert login.url_contains("/dashboard"), "Login failed"
     """
 
     def __init__(self, page: Page) -> None:
         super().__init__(page)
 
     # ------------------------------------------------------------------ #
-    # Locators (implement with real selectors from your website)          #
+    # Locators — discovered from live portal inspection                   #
     # ------------------------------------------------------------------ #
-    # Priority: role > label > data-testid > css > xpath
 
     @property
-    def _username_input(self):
-        # ✏️  Replace with actual locator — examples:
-        # return self.page.get_by_label("Username")
-        # return self.page.get_by_label("FR Code")
-        # return self.page.get_by_placeholder("Enter your username")
-        # return self.page.locator("[data-testid='username-input']")
-        # return self.page.locator("input[name='username']")
-        return self.page.get_by_label("Username")  # ← REPLACE THIS
+    def _fr_code_input(self):
+        # Label: "FR CODE", placeholder: "eg : FR5125"
+        return self.page.get_by_placeholder("eg : FR5125")
 
     @property
     def _password_input(self):
-        # ✏️  Replace with actual locator — examples:
-        # return self.page.get_by_label("Password")
-        # return self.page.locator("[data-testid='password-input']")
-        # return self.page.locator("input[type='password']")
-        return self.page.get_by_label("Password")  # ← REPLACE THIS
+        # Label: "PASSWORD", placeholder: "*******"
+        return self.page.get_by_placeholder("*******")
 
     @property
     def _login_button(self):
-        # ✏️  Replace with actual locator — examples:
-        # return self.page.get_by_role("button", name="Login")
-        # return self.page.get_by_role("button", name="Sign In")
-        # return self.page.locator("[data-testid='login-btn']")
-        return self.page.get_by_role("button", name="Login")  # ← REPLACE THIS
+        # Blue "Login" button
+        return self.page.get_by_role("button", name="Login")
 
     @property
-    def _error_message(self):
-        # ✏️  Replace with actual error indicator locator
-        # return self.page.locator("[class*='error-message']")
-        # return self.page.get_by_role("alert")
-        return self.page.get_by_role("alert")  # ← REPLACE THIS
+    def _error_alert(self):
+        # Common error toast/alert after failed login
+        return self.page.locator(".alert, .error-msg, [class*='error'], [class*='alert']").first
 
     # ------------------------------------------------------------------ #
     # Actions                                                              #
     # ------------------------------------------------------------------ #
 
-    async def enter_username(self, username: str) -> None:
+    async def enter_fr_code(self, fr_code: str) -> None:
         await self.safe_fill(
-            self._username_input,
-            username,
-            label="Username / FR Code field",
+            self._fr_code_input,
+            fr_code,
+            label="FR Code field",
         )
 
     async def enter_password(self, password: str) -> None:
@@ -105,37 +77,49 @@ class LoginPage(BasePage):
         await self.safe_click(self._login_button, label="Login button")
 
     # ------------------------------------------------------------------ #
-    # High-Level                                                           #
+    # High-Level Login                                                     #
     # ------------------------------------------------------------------ #
 
-    async def perform_login(self, username: str, password: str) -> None:
+    async def perform_login(self, username: str, password: str, post_login_url_fragment: str = "/lcoportal/") -> None:
         """
-        Complete login sequence: fill username → fill password → click login.
+        Complete login: enter FR Code → enter Password → click Login.
 
         Args:
-            username: FR code or username from environment config.
-            password: Password from environment config.
+            username: FR Code from APP_USERNAME in .env
+            password: Password from APP_PASSWORD in .env
+            post_login_url_fragment: URL fragment to wait for after login
 
         Raises:
-            AuthenticationError: If login fails (error message visible after submit).
+            AuthenticationError: If login fails (error visible or redirect to login)
         """
-        _log.info("Filling login form | user={user}", user=username)
-
-        await self.enter_username(username)
+        _log.info("Entering FR Code: {user}", user=username)
+        await self.enter_fr_code(username)
         await self.enter_password(password)
         await self.click_login()
 
-        await self.wait_for_network_idle()
+        # Wait for the URL to change indicating success, or check for failure on the current page
+        try:
+            from framework.core.wait_utils import wait_for_url_contains
+            await wait_for_url_contains(self._page, post_login_url_fragment, timeout=15_000)
+            _log.info("Login successful. Redirected to {url}", url=self.current_url)
+            return
+        except Exception:
+            # If it didn't redirect, it likely failed.
+            pass
 
-        # Check for login error message
-        if await self.safe_is_visible(self._error_message, timeout=3_000):
-            error_text = await self.safe_get_text(self._error_message, label="Error message")
+        # Check if still on login page (login failed)
+        if await self.safe_is_visible(self._fr_code_input, timeout=3_000):
+            # Try to read error message
+            error_text = ""
+            if await self.safe_is_visible(self._error_alert, timeout=2_000):
+                error_text = await self.safe_get_text(self._error_alert, label="Error alert")
             raise AuthenticationError(
-                f"Login failed — error message on page: '{error_text}'"
+                f"Login failed — still on login page. "
+                f"Error: '{error_text}' | "
+                f"Check FR Code and Password in .env"
             )
 
-        _log.info("Login form submitted successfully.")
+        _log.info("Login successful. Current URL: {url}", url=self.current_url)
 
     async def is_on_login_page(self) -> bool:
-        """Check if we are currently on the login page."""
-        return await self.safe_is_visible(self._username_input, timeout=3_000)
+        return await self.safe_is_visible(self._fr_code_input, timeout=3_000)

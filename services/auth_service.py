@@ -39,7 +39,7 @@ class AuthService:
 
     # The URL fragment expected after successful login.
     # Override this in your concrete workflow or subclass.
-    POST_LOGIN_URL_FRAGMENT = "/dashboard"
+    POST_LOGIN_URL_FRAGMENT = "/lcoportal/"
 
     def __init__(self, browser_manager: BrowserManager) -> None:
         self._bm = browser_manager
@@ -112,31 +112,19 @@ class AuthService:
             await page.goto(self._env.app_url, wait_until="networkidle")
             await wait_for_page_load(page)
 
-            # --- Delegate to page object (implemented per workflow) ------
-            # from pages.login_page import LoginPage
-            # login_page = LoginPage(page)
-            # await login_page.perform_login(
-            #     username=self._env.app_username,
-            #     password=self._env.app_password,
-            # )
+            # --- Delegate to page object --------------------------------
+            from pages.login_page import LoginPage
+            login_page = LoginPage(page)
+            await login_page.perform_login(
+                username=self._env.app_username,
+                password=self._env.app_password,
+                post_login_url_fragment=post_login_url_fragment,
+            )
             # ------------------------------------------------------------
 
-            _log.info(
-                "Login form submission delegated to LoginPage. "
-                "Implement pages/login_page.py to complete this step."
-            )
-
-            # Verify post-login navigation
-            current_url = page.url
-            if post_login_url_fragment.lower() in current_url.lower():
-                _log.info("Login successful. Saving session...")
-                await self._bm.save_session()
-                return True
-            else:
-                raise AuthenticationError(
-                    f"Login may have failed. Expected '{post_login_url_fragment}' "
-                    f"in URL, got: {current_url}"
-                )
+            _log.info("Login successful. Saving session...")
+            await self._bm.save_session()
+            return True
 
         except AuthenticationError:
             raise

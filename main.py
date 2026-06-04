@@ -70,8 +70,12 @@ def _get_workflow(name: str):
 
     ⚠️  Add your workflow imports and mappings below.
     """
+    from workflows.demo_workflow import DemoWorkflow
+    from workflows.interactive_workflow import InteractiveWorkflow
+
     registry: dict = {
-        # "default": YourDefaultWorkflow,
+        "demo": DemoWorkflow,
+        "interactive": InteractiveWorkflow,
         # "customer_creation": CustomerCreationWorkflow,
     }
 
@@ -110,9 +114,9 @@ async def run(input_file: str, workflow_name: str) -> None:
     print("=" * 60)
     print(f"  Run Complete: {summary['workflow']}")
     print(f"  Total:   {summary['total']}")
-    print(f"  Success: {summary['success']}  ✅")
-    print(f"  Failed:  {summary['failure']}  ❌")
-    print(f"  Skipped: {summary['skipped']}  ⏭")
+    print(f"  Success: {summary['success']}  [OK]")
+    print(f"  Failed:  {summary['failure']}  [FAIL]")
+    print(f"  Skipped: {summary['skipped']}  [SKIP]")
     print(f"  Rate:    {summary['success_rate_pct']}%")
     print(f"  Time:    {summary['duration_seconds']}s")
     print("=" * 60)
@@ -135,16 +139,17 @@ def main() -> None:
         print("Bootstrap-only mode. Exiting.")
         sys.exit(0)
 
-    if not args.input:
-        print("\n[ERROR] --input is required. Provide path to Excel file.\n")
+    if not args.input and args.workflow != "interactive":
+        print("\n[ERROR] --input is required for normal workflows.\n"
+              "To run without an input file, use: --workflow interactive\n")
         sys.exit(1)
 
-    input_path = Path(args.input)
-    if not input_path.exists():
+    input_path = Path(args.input) if args.input else None
+    if input_path and not input_path.exists():
         print(f"\n[ERROR] Input file not found: {input_path}\n")
         sys.exit(1)
 
-    asyncio.run(run(str(input_path), args.workflow))
+    asyncio.run(run(str(input_path) if input_path else "", args.workflow))
 
 
 if __name__ == "__main__":
