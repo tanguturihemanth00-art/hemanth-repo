@@ -1,0 +1,67 @@
+
+# ============================================================
+# Enterprise Automation Framework - .gitignore
+# ============================================================
+
+# --- SECRETS (NEVER COMMIT) ---
+.env
+*.env.local
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+*.egg
+.eggs/
+pip-wheel-metadata/
+
+# --- Virtual Environment ---
+.venv/
+venv/
+env/
+ENV/
+
+# --- Data Output (generated at runtime) ---
+data/output/
+data/failed/
+data/screenshots/
+data/logs/
+data/session/
+
+# Keep directory structure
+!data/output/.gitkeep
+!data/failed/.gitkeep
+!data/screenshots/.gitkeep
+!data/logs/.gitkeep
+!data/session/.gitkeep
+
+# --- Input Excel (may contain PII — handle per your policy) ---
+# Uncomment if input files should NOT be committed:
+# data/input/*.xlsx
+# data/input/*.xls
+
+# --- Playwright / Node ---
+node_modules/
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
+/playwright/.auth/
+
+# --- IDE ---
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# --- Coverage / Tests ---
+.pytest_cache/
+.coverage
+htmlcov/

@@ -1,0 +1,65 @@
+# ============================================================
+# ENTERPRISE AUTOMATION FRAMEWORK - CONFIG
+# ============================================================
+# Structured non-secret configuration lives here.
+# Secrets MUST live in .env only.
+
+application:
+  name: "Enterprise Automation Framework"
+  version: "1.0.0"
+
+browser:
+  type: "chromium"           # chromium | firefox | webkit
+  headless: false            # overridden by .env BROWSER_HEADLESS
+  slow_mo: 0                 # ms delay between actions (overridden by .env)
+  viewport:
+    width: 1920
+    height: 1080
+  timeout:
+    default: 30000           # ms - general action timeout
+    navigation: 60000        # ms - page navigation timeout
+    element: 15000           # ms - element visibility wait
+  args:
+    - "--disable-infobars"
+    - "--no-sandbox"
+    - "--disable-dev-shm-usage"
+
+session:
+  reuse: true                # overridden by .env SESSION_REUSE
+  storage_path: "data/session/session_state.json"
+
+logging:
+  level: "INFO"              # overridden by .env LOG_LEVEL
+  rotation: "10 MB"
+  retention: "30 days"
+  format: "{time:YYYY-MM-DD HH:mm:ss.SSS} | {level:<8} | {extra[exec_id]} | {extra[row_id]} | {name}:{function}:{line} | {message}"
+  console_enabled: true
+  file_enabled: true
+  mask_fields:
+    - "password"
+    - "token"
+    - "secret"
+
+retry:
+  max_attempts: 3
+  wait_min: 1                # seconds - min exponential backoff
+  wait_max: 10               # seconds - max exponential backoff
+  multiplier: 2
+
+excel:
+  engine: "openpyxl"
+  required_columns: []       # populated per workflow
+  max_rows: 10000
+  skip_empty_rows: true
+  duplicate_check_columns: []
+
+workflow:
+  continue_on_failure: true  # process remaining rows on single row failure
+  screenshot_on_failure: true
+  screenshot_on_success: false
+  row_delay_ms: 500          # delay between processing rows
+
+reporting:
+  generate_summary: true
+  include_timestamps: true
+  include_screenshots: true

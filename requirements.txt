@@ -1,0 +1,23 @@
+# ============================================================
+# Enterprise Automation Framework - Dependencies
+# ============================================================
+# Install: pip install -r requirements.txt
+# Then:    playwright install chromium
+
+# --- Core Automation ---
+playwright>=1.44.0
+
+# --- Data Processing ---
+pandas>=2.2.0
+openpyxl>=3.1.0
+
+# --- Config & Validation ---
+pydantic>=2.7.0
+python-dotenv>=1.0.0
+PyYAML>=6.0.1
+
+# --- Logging ---
+loguru>=0.7.2
+
+# --- Retry ---
+tenacity>=8.3.0
