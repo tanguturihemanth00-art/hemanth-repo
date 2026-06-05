@@ -72,11 +72,12 @@ def _get_workflow(name: str):
     """
     from workflows.demo_workflow import DemoWorkflow
     from workflows.interactive_workflow import InteractiveWorkflow
+    from workflows.village_workflow import VillageReportWorkflow
 
     registry: dict = {
         "demo": DemoWorkflow,
         "interactive": InteractiveWorkflow,
-        # "customer_creation": CustomerCreationWorkflow,
+        "village_report": VillageReportWorkflow,
     }
 
     if not registry:

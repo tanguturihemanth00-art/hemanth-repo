@@ -10,6 +10,7 @@ on:
         type: choice
         options:
           - demo
+          - village_report
 
 permissions:
   contents: read
@@ -51,7 +52,7 @@ jobs:
         BROWSER_HEADLESS: 'true'
         CI: 'true'
       run: |
-        python main.py --workflow ${{ github.event.inputs.workflow_name }} --input data/input/demo.xlsx || true
+        python main.py --workflow ${{ github.event.inputs.workflow_name }} --input data/input/${{ github.event.inputs.workflow_name }}.xlsx || true
 
     - name: Upload Output Artifacts
       if: always()
