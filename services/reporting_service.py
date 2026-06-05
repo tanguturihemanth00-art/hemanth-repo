@@ -158,31 +158,45 @@ class ReportingService:
         # Format the start time
         start_time_str = result.started_at.strftime("%Y-%m-%d %H:%M:%S")
         
+        # Extract dynamic columns from the first row's raw_data (excluding internal fields)
+        internal_fields = {'row_id', 'status', 'error_message', 'processed_at', 'screenshot_path', 'row_index_'}
+        dynamic_cols = []
+        if result.row_results and result.row_results[0].raw_data:
+            dynamic_cols = [k for k in result.row_results[0].raw_data.keys() if k not in internal_fields]
+
+        # Build table headers
+        headers_html = "<th>Row ID</th>"
+        for col in dynamic_cols:
+            headers_html += f"<th>{col.replace('_', ' ').title()}</th>"
+        headers_html += "<th>Status</th><th>Duration</th><th>Error Message</th><th>Screenshot</th>"
+
         # Build table rows
         table_rows_html = ""
         for row in result.row_results:
             error_msg = row.error_message or "-"
             
-            # Create a relative link for screenshots if they exist
-            # Assuming screenshots are in a sibling directory 'screenshots' 
-            # and report is in 'report' dir, we copy them or link them.
-            # GitHub Pages will serve the whole data/ directory if configured right.
-            # Actually, GitHub pages serves from the root of the artifact. 
-            # If the artifact contains 'report', 'screenshots', we just link `../screenshots/file.png`.
             screenshot_cell = "-"
             if row.screenshot_path:
                 filename = Path(row.screenshot_path).name
                 screenshot_cell = f'<a href="./screenshots/{filename}" class="screenshot-link" target="_blank">View</a>'
             
-            table_rows_html += f"""
-            <tr>
-                <td>{row.row_id}</td>
+            # Start with Row ID
+            row_html = f"<td>{row.row_id}</td>"
+            
+            # Add dynamic columns
+            for col in dynamic_cols:
+                val = row.raw_data.get(col, "-")
+                row_html += f"<td>{val}</td>"
+                
+            # Add standard columns
+            row_html += f"""
                 <td><span class="badge badge-{row.status}">{row.status}</span></td>
                 <td>{row.duration_seconds:.2f}s</td>
                 <td>{error_msg}</td>
                 <td>{screenshot_cell}</td>
-            </tr>
             """
+            
+            table_rows_html += f"<tr>{row_html}</tr>"
 
         html_content = f"""<!DOCTYPE html>
 <html lang="en">
@@ -223,20 +237,18 @@ class ReportingService:
             </div>
         </div>
 
-        <table>
-            <thead>
-                <tr>
-                    <th>Task ID</th>
-                    <th>Status</th>
-                    <th>Duration</th>
-                    <th>Error Message</th>
-                    <th>Screenshot</th>
-                </tr>
-            </thead>
-            <tbody>
-                {table_rows_html}
-            </tbody>
-        </table>
+        <div style="overflow-x: auto; width: 100%;">
+            <table>
+                <thead>
+                    <tr>
+                        {headers_html}
+                    </tr>
+                </thead>
+                <tbody>
+                    {table_rows_html}
+                </tbody>
+            </table>
+        </div>
     </div>
 </body>
 </html>
